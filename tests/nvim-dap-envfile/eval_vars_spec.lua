@@ -27,39 +27,40 @@ describe("eval_vars()", function()
         return "/home/user/project"
       end,
     }
+    ---@diagnostic disable-next-line: duplicate-set-field
     os.getenv = function(_)
       return "test"
     end
   end)
 
   it("replaces ${fileBasename}", function()
-    local result = M.eval_vars("File: ${fileBasename}")
+    local result = M.expand_path_vars("File: ${fileBasename}")
     assert.are.equal("File: file.lua", result)
   end)
 
   it("replaces ${fileBasenameNoExtension}", function()
-    local result = M.eval_vars("Name: ${fileBasenameNoExtension}")
+    local result = M.expand_path_vars("Name: ${fileBasenameNoExtension}")
     assert.are.equal("Name: file", result)
   end)
 
   it("replaces ${workspaceFolderBasename}", function()
-    local result = M.eval_vars("Project: ${workspaceFolderBasename}")
+    local result = M.expand_path_vars("Project: ${workspaceFolderBasename}")
     assert.are.equal("Project: project", result)
   end)
 
   it("replaces ${env:TEST_ENV}", function()
-    local result = M.eval_vars("${env:TEST_ENV}")
+    local result = M.expand_path_vars("${env:TEST_ENV}")
     assert.are.equal("test", result)
   end)
 
   it("handles multiple replacements", function()
     local input = "Dir: ${workspaceFolder}, File: ${fileBasename}"
     local expected = "Dir: /home/user/project, File: file.lua"
-    assert.are.equal(expected, M.eval_vars(input))
+    assert.are.equal(expected, M.expand_path_vars(input))
   end)
 
   it("returns same string if no variables", function()
     local input = "no variables here"
-    assert.are.equal(input, M.eval_vars(input))
+    assert.are.equal(input, M.expand_path_vars(input))
   end)
 end)

@@ -44,6 +44,12 @@ local default_config = {
   ---Automatically adds a dap on_config listener.
   ---@type boolean?
   add_dap_listener = true,
+  ---Also sets environment variables using the Neovim API. Only works if
+  ---`add_dap_listener` is enabled. This is enabled by default since it adds no
+  ---overhead and can be helpful for certain DAP servers that don’t support the
+  ---`env` option.
+  ---@type boolean?
+  use_neovim_env = true,
   ---Print additional debug messages. Useful to check what your inputs are
   ---evaluating to.
   ---@type boolean?
@@ -54,9 +60,11 @@ local M = {
   config = default_config,
 }
 
+---@alias env_table table<string, string>
+
 ---@param str string
 ---@return string str String with evaluated variables (if any)
-function M.eval_vars(str)
+function M.expand_path_vars(str)
   for pattern, replace_fn in pairs(replacements) do
     str = str:gsub(pattern, replace_fn)
   end
@@ -66,15 +74,16 @@ end
 
 ---@param path string Path for .env file. Variables like ${file} are
 --- automatically evaluated.
----@return table env Table with env values, read from path.
+---@return env_table env A key-value table of envs.
 function M.load_env_file(path)
-  local env = {}
+  local env = {} ---@type table<string,string>
   local file = io.open(path, "r")
   if not file then
     return env
   end
 
   for line in file:lines() do
+    ---@type string, string
     local key, value = line:match("^%s*([%w_]+)%s*=%s*(.+)%s*$")
     if key and value then
       -- remove quotes
@@ -84,6 +93,16 @@ function M.load_env_file(path)
 
   file:close()
   return env
+end
+
+---@param envs env_table
+function M.set_neovim_env(envs)
+  for k, v in pairs(envs) do
+    vim.env[k] = v
+    if M.config.debug or false then
+      vim.print("vim.env: set " .. k .. " to " .. v)
+    end
+  end
 end
 
 ---@param opts Config
@@ -101,7 +120,7 @@ function M.setup(opts)
       local config = vim.deepcopy(original_config)
 
       if config.envFile then
-        local path = M.eval_vars(config.envFile)
+        local path = M.expand_path_vars(config.envFile)
         if M.config.debug then
           vim.print("env path: " .. path)
         end
@@ -109,10 +128,13 @@ function M.setup(opts)
         if vim.fn.filereadable(path) == 1 then
           local env_vars = M.load_env_file(path)
           if M.config.debug then
-            vim.print("envs: " .. env_vars)
+            vim.print("envs: " .. vim.inspect(env_vars))
           end
 
           config.env = vim.tbl_extend("force", config.env or {}, env_vars)
+          if M.config.use_neovim_env then
+            M.set_neovim_env(env_vars)
+          end
         else
           vim.notify("No .env file found: " .. path, vim.log.levels.WARN, notify_opts)
         end
