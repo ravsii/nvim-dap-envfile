@@ -1,4 +1,4 @@
-*nvim-dap-envfile.txt*    For Neovim >= 0.10.4    Last change: 2025 October 21
+*nvim-dap-envfile.txt*    For Neovim >= 0.10.4   Last change: 2025 November 03
 
 ==============================================================================
 Table of Contents                         *nvim-dap-envfile-table-of-contents*
@@ -54,6 +54,12 @@ Default configuration, for reference:
       ---Automatically adds a dap on_config listener.
       ---@type boolean?
       add_dap_listener = true,
+      ---Also sets environment variables using the Neovim API. Only works if
+      ---`add_dap_listener` is enabled. This is enabled by default since it adds no
+      ---overhead and can be helpful for certain DAP servers that don’t support the
+      ---`env` option.
+      ---@type boolean?
+      use_neovim_env = true,
       ---Print additional debug messages. Useful to check what your inputs are
       ---evaluating to.
       ---@type boolean?
@@ -70,7 +76,9 @@ EXAMPLES                          *nvim-dap-envfile-nvim-dap-envfile-examples*
 
 USING ENVFILE ~
 
-Your project-local `.nvim.lua` or any other per-project configuration file.
+Below is an example for Go, using your project-local `.nvim.lua` or any other
+per-project configuration file. If you’re unfamiliar with such setups, see
+`:help exrc`.
 
 >lua
     local dap = require("dap")
@@ -82,7 +90,9 @@ Your project-local `.nvim.lua` or any other per-project configuration file.
       timeout = 10000,
       outputMode = "remote",
       program = "main.go",
-      envFile = "${workspaceFolder}/.env", -- will be read, parsed, and passed as "env" table.
+    
+      -- will be read, parsed, and passed as "env" table.
+      envFile = "${workspaceFolder}/.env",
     })
 <
 
@@ -113,13 +123,13 @@ custom one), you can still use our helper functions
 <
 
 
-ENVFILE.EVAL_VARS(STR: STRING) -> STRING ~
+ENVFILE.EXPAND_PATH_VARS(STR: STRING) -> STRING ~
 
 Expands VS Code–style variables inside a string. For available variables see
 below.
 
 >lua
-    local resolved = envfile.eval_vars("${workspaceFolder}/.env")
+    local resolved = envfile.expand_path_vars("${workspaceFolder}/.env")
     -- e.g. "/home/user/project/.env"
 <
 
@@ -127,7 +137,7 @@ below.
 ENVFILE.LOAD_ENV_FILE(PATH: STRING) -> TABLE ~
 
 Parses a `.env` file and returns a Lua table of key/value pairs. Path is
-evaluated using `eval_vars`.
+evaluated using `expand_path_vars`.
 
 >lua
     local env = envfile.load_env_file("${workspaceFolder}/.env")
@@ -136,6 +146,23 @@ evaluated using `eval_vars`.
 <
 
 Quotes around values (`"foo"` or `'foo'`) are stripped automatically.
+
+
+ENVFILE.SET_NEOVIM_ENV(ENVS: TABLE<STRING, STRING>) -> NIL ~
+
+Sets environment variables for the current Neovim session using the Neovim API
+(`vim.env`). Each key/value pair in `envs` is added to `vim.env`, making the
+variables available to shell commands, plugins, and other Lua code executed
+within Neovim.
+
+>lua
+    envfile.set_neovim_env({
+      DB_HOST = "localhost",
+      PORT = "8080",
+    })
+    -- vim.env.DB_HOST == "localhost"
+    -- vim.env.PORT == "8080"
+<
 
 
 VARIABLE EXPANSION ~
