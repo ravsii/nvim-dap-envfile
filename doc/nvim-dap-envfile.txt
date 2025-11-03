@@ -38,6 +38,7 @@ USING LAZY.NVIM ~
 >lua
     {
       "ravsii/nvim-dap-envfile",
+      version = "*", -- use latest stable release
       dependencies = { "mfussenegger/nvim-dap" },
       opts = {},
     }
