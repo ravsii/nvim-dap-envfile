@@ -22,6 +22,7 @@ repeat the same code across multiple projects.
 ```lua
 {
   "ravsii/nvim-dap-envfile",
+  version = "*", -- use latest stable release
   dependencies = { "mfussenegger/nvim-dap" },
   opts = {},
 }
