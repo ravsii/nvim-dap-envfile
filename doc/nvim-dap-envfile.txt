@@ -1,4 +1,4 @@
-*nvim-dap-envfile.txt*    For Neovim >= 0.10.4   Last change: 2025 November 03
+*nvim-dap-envfile.txt*    For Neovim >= 0.10.4    Last change: 2026 January 10
 
 ==============================================================================
 Table of Contents                         *nvim-dap-envfile-table-of-contents*
