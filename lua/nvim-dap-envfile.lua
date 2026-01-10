@@ -1,3 +1,5 @@
+local utils = require("utils")
+
 local notify_opts = {
   title = "nvim-dap-envfile",
   icon = "",
@@ -79,15 +81,25 @@ function M.load_env_file(path)
   local env = {} ---@type table<string,string>
   local file = io.open(path, "r")
   if not file then
+    vim.notify("Can't load file: " .. path, vim.log.levels.ERROR, notify_opts)
     return env
   end
 
   for line in file:lines() do
-    ---@type string, string
-    local key, value = line:match("^%s*([%w_]+)%s*=%s*(.+)%s*$")
-    if key and value then
-      -- remove quotes
-      env[key] = value:gsub('^"(.*)"$', "%1"):gsub("^'(.*)'$", "%1")
+    local key, value = utils.str_split_once(line, "=")
+
+    if value then
+      value = vim.trim(value)
+
+      if vim.startswith(value, '"') then
+        value = utils.parse_double(value)
+      elseif vim.startswith(value, "'") then
+        value = utils.parse_single(value)
+      end
+
+      env[key] = value
+    else
+      vim.notify('Unexpected format for "' .. key .. '"', vim.log.levels.WARN, notify_opts)
     end
   end
 
